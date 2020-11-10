@@ -1,0 +1,3 @@
+OBJECT_NAME,OBJECT_TYPE,SOURCE_LOCATION,TARGET_LOCATION
+Reliability_IFR Dashboard,dxp,/Service Data Analytics/Service Suite/Reliability/IFR Product/Analysis/,/Service Data Analytics/Project X Reliability/Analysis/
+Assets V2019 10 15,query,/Service Data Analytics/Project X Reliability/Information Link/,/Service Data Analytics/Project X Reliability/Information Link/

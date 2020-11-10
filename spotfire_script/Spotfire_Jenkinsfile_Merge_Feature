@@ -1,0 +1,43 @@
+pipeline {
+    agent any
+    
+    options {
+      disableConcurrentBuilds()
+      timeout(time: 1, unit: 'HOURS')
+      ansiColor('xterm')
+	  buildDiscarder(logRotator(numToKeepStr: '100'))
+    }
+
+    stages {
+		stage('Merging Changes into Spotfire Master Branch of ODP_Spotfire Repo') {
+		steps {
+			script {
+				try {
+					sshagent (credentials: ['git']) {
+								sh 'git checkout master'
+								sh 'git pull origin spotfire_feature'
+								sh('git push origin HEAD:master')
+					}
+				}
+				catch (err) {
+					sshagent (credentials: ['git']) {
+								sh 'git checkout --theirs -- .'
+								sh 'git add -A :/'
+								sh 'git commit -m "Adding files to Master Branch of Spotfire Repo"'
+								sh('git push origin HEAD:master')
+					}
+				}
+			}
+		}
+		}
+	}
+	post {
+		always
+		{
+			script{
+				echo 'Clean up workspace'
+				deleteDir()
+			}
+		}
+    }
+}
