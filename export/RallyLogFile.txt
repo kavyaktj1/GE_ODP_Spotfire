@@ -1,0 +1,12 @@
+
+PyRal python script Log File
+v_version:(1, 4, 2)
+Deleting spotfire_data.csv file as it is present
+spotfire_data_temp file is not present.Which is OK
+user_story.FormattedID = US77296
+user_story.CreationDate[0:10] = 2020-10-30
+user_story.FlowState.Name = Defined
+Number of open UserStories are = ['US77296']
+user_story =  US77296
+FormattedID = US77296list_of_csv = ['Spotfire Fix DD.csv']
+Deleting spotfire_data_temp.csv file

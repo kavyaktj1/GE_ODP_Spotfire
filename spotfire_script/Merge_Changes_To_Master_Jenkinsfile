@@ -1,0 +1,87 @@
+def head_branch=''
+
+pipeline {
+
+    agent any
+
+	options {
+      disableConcurrentBuilds()
+      timeout(time: 1, unit: 'HOURS')
+      buildDiscarder(logRotator(numToKeepStr: '30'))
+    }
+     stages {
+         
+       stage('Login into Github and checking open PRs') {
+		steps {
+			
+			catchError {
+
+				sshagent (credentials: ['git']) {
+							script {
+							    
+								head_branch=sh(script:'python3 spotfire_script/Merge_PR_To_Master.py', returnStdout: true).trim()
+								echo "head_branch: ${head_branch}"							
+							}
+				
+				}
+			}
+		}
+	}   
+	  stage('Merging changes to Master if PR is approved') {
+	  	
+		when { 
+			
+			expression {
+				return head_branch != 'None';
+			} 
+		}
+		steps {
+			script {
+				try {
+					sshagent (credentials: ['git']) {
+								sh "git checkout master"
+								sh "git pull origin ${head_branch}"
+								sh('git push origin HEAD:master')
+					}
+				}
+				catch (err) {
+					sshagent (credentials: ['git']) {
+								echo "WARNING: Merge Conflict in the PR."
+								sh 'git checkout --theirs -- .'
+								sh 'git add -A :/'
+								sh 'git commit -m "Adding Spotfire migration csv files in master Branch"'
+								sh('git push origin HEAD:master')
+					}
+				}
+			}
+		}
+	}
+	
+	stage('Executing Export Job') {
+		when { 
+			
+			expression {
+				return head_branch != 'None';
+			} 
+		}
+		steps {
+			script {
+				try {
+					build "Spotfire_Merge_And_Export"
+				}
+				catch (err) {
+					echo "Export Job Failed"
+				}
+			}
+		}
+	}
+	
+  }
+  post {
+  	always {
+		echo 'Clean up workspace'
+		deleteDir()
+	}
+  }
+  
+} 

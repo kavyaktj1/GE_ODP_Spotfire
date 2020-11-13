@@ -1,0 +1,59 @@
+pipeline {
+    agent any
+    
+    options {
+      disableConcurrentBuilds()
+      timeout(time: 1, unit: 'HOURS')
+      ansiColor('xterm')
+	  buildDiscarder(logRotator(numToKeepStr: '100'))
+    }
+    parameters {
+        string(description: '', name:'USER_STORY', defaultValue: "")
+			
+    }
+    stages {				
+		stage ('Download csv from the rally') {
+			steps {
+				sshagent (credentials: ['git']) {
+					script {
+						sh 'git checkout spotfire_feature_forward'
+						sh 'git pull'
+						//sh 'python3 Test_Rally_Int_RemPrint.py --config=rally_configuration.cfg ${USER_STORY}'
+						flag = sh(script:'python3 Rally_PyRal_Integration.py --config=rally_configuration.cfg ${USER_STORY}', returnStdout: true).trim()
+						echo "${flag}"
+						if(flag!='NULL'){
+						sh """
+							git add -A :/
+							git commit -m "Pushing the csv file to remote spotfire_feature_forward repo"
+							git push origin HEAD:spotfire_feature_forward
+						   """
+						}   
+					}
+				}
+			}
+		
+		}
+		stage ('Creating PF from feature to master') {
+			steps {
+				sshagent (credentials: ['git']) {
+					script {
+					       if (flag!='NULL'){ 
+					        build job: 'Spotfire_Forward_PR_Creation', parameters: [string(name: 'Request_Type', value: "Forward"),string(name: 'User_Story', value: "${USER_STORY}")]
+					       }
+					}
+				}
+			}
+		
+		}
+		
+	}
+	post {
+		always
+		{
+			script{
+				echo 'Clean up workspace'
+				deleteDir()
+			}
+		}
+    }
+}
